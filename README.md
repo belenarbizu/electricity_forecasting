@@ -14,3 +14,6 @@ PJM West Region: 2001-2018 (PJMW): estimated energy consumption in Megawatts (MW
 PJM Load Combined: 1998-2001 (PJM_Load): estimated energy consumption in Megawatts (MW)
 est_hourly.paruqet: Combined All Regions Load in Megawatts (MW): American Electric Power (AEP), Commonwealth Edison (ComEd), Dayton Power and Light Company
 pjm_hourly_est: Combined All Regions Load: American Electric Power (AEP), Commonwealth Edison (ComEd), Dayton Power and Light Company
+
+Main goal:
+Predict the next 24 hours energy consumption of PJM East Region
