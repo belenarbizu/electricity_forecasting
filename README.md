@@ -17,3 +17,5 @@ pjm_hourly_est: Combined All Regions Load: American Electric Power (AEP), Common
 
 Main goal:
 Predict the next 24 hours energy consumption of PJM East Region
+
+I investigated the extreme low values and identified them as real demand drops during Hurricane Sandy in 2012. Since they correspond to real-world events and represent legitimate system behavior, I kept them in the dataset to preserve realism in forecasting.
