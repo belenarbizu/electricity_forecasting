@@ -19,3 +19,8 @@ Main goal:
 Predict the next 24 hours energy consumption of PJM East Region
 
 I investigated the extreme low values and identified them as real demand drops during Hurricane Sandy in 2012. Since they correspond to real-world events and represent legitimate system behavior, I kept them in the dataset to preserve realism in forecasting.
+
+La serie tiene dependencia local extremadamente fuerte (hora a hora), estacionalidad diaria fuerte y estacionalidad semanal moderada
+
+Baseline 24h MAE: 2300
+Como el consumo promedio es 32080, el MAPE es 7,16% lo que implica un baseline fuerte.
