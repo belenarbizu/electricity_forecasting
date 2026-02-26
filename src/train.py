@@ -78,10 +78,38 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
     tscv = TimeSeriesSplit(n_splits=3)
     model = GridSearchCV(GradientBoostingRegressor(random_state=42), param_grid, cv=tscv, n_jobs=-1)
     model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
+
+    best_model = model.best_estimator_
+
+    history = y_train.copy()
+    predictions = []
+
+    for timestamp in X_test.index:
+        row = X_test.loc[[timestamp]].copy()
+
+        row['lag_1'] = history.iloc[-1]
+        row['lag_24'] = history.iloc[-24]
+        row['lag_168'] = history.iloc[-168]
+
+        row['rolling_24'] = history.iloc[-24:].mean()
+        row['rolling_168'] = history.iloc[-168:].mean()
+
+        pred = best_model.predict(row)[0]
+        predictions.append(pred)
+
+        history = pd.concat([history, pd.Series(pred, index=[timestamp])])
+
+    predictions = pd.Series(predictions, index=X_test.index)
+
     mae_gb = mean_absolute_error(y_test, predictions)
     rmse_gb = np.sqrt(mean_squared_error(y_test, predictions))
+
     print(f"Gradient Boosting MAE: {mae_gb:.2f}, RMSE: {rmse_gb:.2f}")
+
+    # predictions = model.predict(X_test)
+    # mae_gb = mean_absolute_error(y_test, predictions)
+    # rmse_gb = np.sqrt(mean_squared_error(y_test, predictions))
+    # print(f"Gradient Boosting MAE: {mae_gb:.2f}, RMSE: {rmse_gb:.2f}")
 
 
 def main():
