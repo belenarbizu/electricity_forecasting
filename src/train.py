@@ -5,6 +5,8 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+import argparse
+from xgboost import XGBRegressor
 
 
 def prepare_data(data):
@@ -84,9 +86,11 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
     history = y_train.copy()
     predictions = []
 
+    # We need to predict one step at a time to update the lag features without leaking future information
     for timestamp in X_test.index:
         row = X_test.loc[[timestamp]].copy()
 
+        # These lag features are predictions from the previous steps
         row['lag_1'] = history.iloc[-1]
         row['lag_24'] = history.iloc[-24]
         row['lag_168'] = history.iloc[-168]
@@ -97,6 +101,7 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
         pred = best_model.predict(row)[0]
         predictions.append(pred)
 
+        # Update the history with the new prediction for the next iteration
         history = pd.concat([history, pd.Series(pred, index=[timestamp])])
 
     predictions = pd.Series(predictions, index=X_test.index)
@@ -106,13 +111,54 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
 
     print(f"Gradient Boosting MAE: {mae_gb:.2f}, RMSE: {rmse_gb:.2f}")
 
-    # predictions = model.predict(X_test)
-    # mae_gb = mean_absolute_error(y_test, predictions)
-    # rmse_gb = np.sqrt(mean_squared_error(y_test, predictions))
-    # print(f"Gradient Boosting MAE: {mae_gb:.2f}, RMSE: {rmse_gb:.2f}")
+
+def xgboost_model(X_train, y_train, X_test, y_test):
+    model = XGBRegressor(
+        n_estimators=600,
+        learning_rate=0.03,
+        max_depth=8,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        reg_lambda=1,
+        reg_alpha=0.1,
+        random_state=42,
+        n_jobs=-1
+    )
+    model.fit(X_train, y_train)
+
+    history = y_train.copy()
+    predictions = []
+
+    for timestamp in X_test.index:
+        row = X_test.loc[[timestamp]].copy()
+
+        row['lag_1'] = history.iloc[-1]
+        row['lag_24'] = history.iloc[-24]
+        row['lag_168'] = history.iloc[-168]
+
+        row['rolling_24'] = history.iloc[-24:].mean()
+        row['rolling_168'] = history.iloc[-168:].mean()
+
+        pred = model.predict(row)[0]
+        predictions.append(pred)
+
+        history = pd.concat([history, pd.Series(pred, index=[timestamp])])
+
+    predictions = pd.Series(predictions, index=X_test.index)
+
+    mae_xgb = mean_absolute_error(y_test, predictions)
+    rmse_xgb = np.sqrt(mean_squared_error(y_test, predictions))
+
+    print(f"XGBoost MAE: {mae_xgb:.2f}, RMSE: {rmse_xgb:.2f}")
 
 
 def main():
+    argument_parser = argparse.ArgumentParser(description="Train models for electricity demand forecasting")
+    argument_parser.add_argument('--gb', action='store_true', help="Train Gradient Boosting model")
+    argument_parser.add_argument('--sarima', action='store_true', help="Train SARIMA model")
+    argument_parser.add_argument('--xgb', action='store_true', help="Train XGBoost model")
+    args = argument_parser.parse_args()
+
     data = open_file("data/PJME_hourly.csv")
     if data is None:
         return
@@ -127,10 +173,14 @@ def main():
     baseline_eval(X_test, y_test)
     X_train.drop(columns=['seasonal_naive_24', 'seasonal_naive_168'], inplace=True)
     X_test.drop(columns=['seasonal_naive_24', 'seasonal_naive_168'], inplace=True)
-    gradient_boosting_model(X_train, y_train, X_test, y_test)
-    X_train.drop(columns=['lag_1', 'lag_24', 'lag_168'], inplace=True)
-    X_test.drop(columns=['lag_1', 'lag_24', 'lag_168'], inplace=True)
-    #sarima_model(y_train, X_test, y_test)
+    if args.gb:
+        gradient_boosting_model(X_train, y_train, X_test, y_test)
+    if args.sarima:
+        X_train.drop(columns=['lag_1', 'lag_24', 'lag_168'], inplace=True)
+        X_test.drop(columns=['lag_1', 'lag_24', 'lag_168'], inplace=True)
+        sarima_model(y_train, X_test, y_test)
+    if args.xgb:
+        xgboost_model(X_train, y_train, X_test, y_test)
 
 
 if __name__ == "__main__":
