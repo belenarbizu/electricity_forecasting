@@ -187,6 +187,22 @@ def xgboost_model(X_train, y_train, X_test, y_test):
     plt.savefig('plots/xgb_predictions.png')
     plt.close()
 
+    error_df = pd.DataFrame({
+        'error': y_test.values - predictions,
+        'hour': y_test.index.hour
+    })
+    hourly_error = error_df.groupby('hour')['error'].mean()
+    plt.figure(figsize=(10, 6))
+    hourly_error.plot()
+    plt.title('Average Prediction Error by Hour of Day')
+    plt.xlabel('Hour of Day')
+    plt.ylabel('Average Prediction Error (MW)')
+    plt.xticks(range(24))
+    plt.tight_layout()
+    plt.savefig('plots/hourly_error.png')
+    plt.close()
+
+
 def main():
     argument_parser = argparse.ArgumentParser(description="Train models for electricity demand forecasting")
     argument_parser.add_argument('--gb', action='store_true', help="Train Gradient Boosting model")
