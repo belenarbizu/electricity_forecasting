@@ -6,7 +6,10 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 import argparse
-from xgboost import XGBRegressor
+from xgboost import XGBRegressor, plot_importance
+from extermal_features import get_temperature_data
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 
 def prepare_data(data):
@@ -33,13 +36,29 @@ def prepare_data(data):
     data.dropna(inplace=True)
 
 
+def merge_data(data):
+    # Merge temperature data with the main dataset
+    start_date = datetime(2014, 1, 1)
+    end_date = datetime(2017, 12, 31)
+    temp_data = get_temperature_data('72408', start_date, end_date)
+    data = data.merge(temp_data, left_index=True, right_index=True, how='left')
+
+    data['trend'] = np.arange(len(data))
+
+    return data
+
+
 def split_data(data):
     train = data.loc['2014':'2016']
+    train = train.dropna()
     X_train = train.drop(columns=['PJME_MW'])
     y_train = train['PJME_MW']
+
     test = data.loc['2017']
+    test = test.dropna()
     X_test = test.drop(columns=['PJME_MW'])
     y_test = test['PJME_MW']
+
     return X_train, y_train, X_test, y_test
 
 
@@ -114,13 +133,13 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
 
 def xgboost_model(X_train, y_train, X_test, y_test):
     model = XGBRegressor(
-        n_estimators=600,
-        learning_rate=0.03,
+        n_estimators=800,
+        learning_rate=0.02,
         max_depth=8,
         subsample=0.8,
         colsample_bytree=0.8,
-        reg_lambda=1,
-        reg_alpha=0.1,
+        reg_lambda=1.5,
+        reg_alpha=0.5,
         random_state=42,
         n_jobs=-1
     )
@@ -151,6 +170,22 @@ def xgboost_model(X_train, y_train, X_test, y_test):
 
     print(f"XGBoost MAE: {mae_xgb:.2f}, RMSE: {rmse_xgb:.2f}")
 
+    plt.figure(figsize=(10, 8))
+    plot_importance(model, title='XGBoost Feature Importance', importance_type='gain')
+    plt.tight_layout()
+    plt.savefig('plots/xgb_feature_importance.png')
+    plt.close()
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(y_test.index, y_test.values, label='Actual', color='blue')
+    plt.plot(predictions.index, predictions.values, label='Predicted', color='orange', alpha=0.7)
+    plt.title('XGBoost Predictions vs Actual')
+    plt.xlabel('Date')
+    plt.ylabel('Electricity Demand (MW)')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('plots/xgb_predictions.png')
+    plt.close()
 
 def main():
     argument_parser = argparse.ArgumentParser(description="Train models for electricity demand forecasting")
@@ -169,6 +204,7 @@ def main():
     data = data.interpolate()
     prepare_data(data)
     baseline(data)
+    data = merge_data(data)
     X_train, y_train, X_test, y_test = split_data(data)
     baseline_eval(X_test, y_test)
     X_train.drop(columns=['seasonal_naive_24', 'seasonal_naive_168'], inplace=True)

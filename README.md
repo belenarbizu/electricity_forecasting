@@ -24,3 +24,10 @@ La serie tiene dependencia local extremadamente fuerte (hora a hora), estacional
 
 Baseline 24h MAE: 2300
 Como el consumo promedio es 32080, el MAPE es 7,16% lo que implica un baseline fuerte.
+
+External features:
+Temperture from Philadelphia Airport.
+Heating Degree Days (HDD): it measures how cold is compared to 18ºC: HDD=max(0,18−temp)
+Cooling Degree Days (CDD): it measures how hot is compared to 18ºC: CDD=max(0,temp−18)
+The relathionship between temperature and demand is not lineal. The demand is high when it's cold and it's hot but is low when the temperature is comfortable. 
+HDD and CDD transform that relationship into something that models understand better.
