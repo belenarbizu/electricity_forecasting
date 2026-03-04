@@ -13,6 +13,12 @@ import matplotlib.pyplot as plt
 
 
 def prepare_data(data):
+    data.index = pd.to_datetime(data.index)
+    data = data[~data.index.duplicated(keep='first')]
+    data = data.sort_index()
+    data = data.asfreq('h')
+    data = data.interpolate()
+
     # This way 23 and 0 are close to each other, which is important for time series data
     data['hour_sin'] = np.sin(2 * np.pi * data.index.hour / 24)
     # Cosine transformation to capture the cyclical nature of hours in a day (06 is not the same as 18)
@@ -34,6 +40,8 @@ def prepare_data(data):
     data['rolling_168'] = data['PJME_MW'].shift(1).rolling(168).mean()
 
     data.dropna(inplace=True)
+    data = merge_data(data)
+    return data
 
 
 def merge_data(data):
@@ -62,17 +70,12 @@ def split_data(data):
     return X_train, y_train, X_test, y_test
 
 
-def baseline(data):
-    data['seasonal_naive_24'] = data['PJME_MW'].shift(24)
-    data['seasonal_naive_168'] = data['PJME_MW'].shift(168)
-
-
 def baseline_eval(X_test, y_test):
-    mae_naive_24 = mean_absolute_error(y_test, X_test['seasonal_naive_24'])
-    rmse_naive_24 = np.sqrt(mean_squared_error(y_test, X_test['seasonal_naive_24']))
+    mae_naive_24 = mean_absolute_error(y_test, X_test['lag_24'])
+    rmse_naive_24 = np.sqrt(mean_squared_error(y_test, X_test['lag_24']))
 
-    mae_naive_168 = mean_absolute_error(y_test, X_test['seasonal_naive_168'])
-    rmse_naive_168 = np.sqrt(mean_squared_error(y_test, X_test['seasonal_naive_168']))
+    mae_naive_168 = mean_absolute_error(y_test, X_test['lag_168'])
+    rmse_naive_168 = np.sqrt(mean_squared_error(y_test, X_test['lag_168']))
 
     print(f"Seasonal Naive 24 MAE: {mae_naive_24:.2f}, RMSE: {rmse_naive_24:.2f}")
     print(f"Seasonal Naive 168 MAE: {mae_naive_168:.2f}, RMSE: {rmse_naive_168:.2f}")
@@ -213,18 +216,13 @@ def main():
     data = open_file("data/PJME_hourly.csv")
     if data is None:
         return
-    data.index = pd.to_datetime(data.index)
-    data = data[~data.index.duplicated(keep='first')]
-    data = data.sort_index()
-    data = data.asfreq('h')
-    data = data.interpolate()
-    prepare_data(data)
-    baseline(data)
-    data = merge_data(data)
+
+    data = prepare_data(data)
+
     X_train, y_train, X_test, y_test = split_data(data)
+
     baseline_eval(X_test, y_test)
-    X_train.drop(columns=['seasonal_naive_24', 'seasonal_naive_168'], inplace=True)
-    X_test.drop(columns=['seasonal_naive_24', 'seasonal_naive_168'], inplace=True)
+
     if args.gb:
         gradient_boosting_model(X_train, y_train, X_test, y_test)
     if args.sarima:
