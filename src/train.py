@@ -84,12 +84,14 @@ def baseline_eval(X_test, y_test):
 def sarima_model(y_train, X_test, y_test):
     model = SARIMAX(y_train, order=(1, 0, 1), seasonal_order=(1, 1, 1, 24), enforce_stationarity=False, enforce_invertibility=False)
     results = model.fit(disp=False)
-    print(results.summary())
+    
     forecast = results.get_forecast(steps=len(X_test))
     forecast_values = forecast.predicted_mean
     forecast_values.index = X_test.index  # Align forecast index with test index
+
     mae_sarima = mean_absolute_error(y_test, forecast_values)
     rmse_sarima = np.sqrt(mean_squared_error(y_test, forecast_values))
+
     print(f"SARIMA MAE: {mae_sarima:.2f}, RMSE: {rmse_sarima:.2f}")
 
 
@@ -136,12 +138,12 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
 
 def xgboost_model(X_train, y_train, X_test, y_test):
     model = XGBRegressor(
-        n_estimators=800,
-        learning_rate=0.02,
+        n_estimators=600,
+        learning_rate=0.03,
         max_depth=8,
         subsample=0.8,
         colsample_bytree=0.8,
-        reg_lambda=1.5,
+        reg_lambda=1.0,
         reg_alpha=0.5,
         random_state=42,
         n_jobs=-1
