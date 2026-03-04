@@ -10,6 +10,7 @@ from xgboost import XGBRegressor, plot_importance
 from extermal_features import get_temperature_data
 from datetime import datetime
 import matplotlib.pyplot as plt
+import mlflow
 
 
 def prepare_data(data):
@@ -80,6 +81,8 @@ def baseline_eval(X_test, y_test):
     print(f"Seasonal Naive 24 MAE: {mae_naive_24:.2f}, RMSE: {rmse_naive_24:.2f}")
     print(f"Seasonal Naive 168 MAE: {mae_naive_168:.2f}, RMSE: {rmse_naive_168:.2f}")
 
+    return mae_naive_24, rmse_naive_24, mae_naive_168, rmse_naive_168
+
 
 def sarima_model(y_train, X_test, y_test):
     model = SARIMAX(y_train, order=(1, 0, 1), seasonal_order=(1, 1, 1, 24), enforce_stationarity=False, enforce_invertibility=False)
@@ -93,6 +96,8 @@ def sarima_model(y_train, X_test, y_test):
     rmse_sarima = np.sqrt(mean_squared_error(y_test, forecast_values))
 
     print(f"SARIMA MAE: {mae_sarima:.2f}, RMSE: {rmse_sarima:.2f}")
+    
+    return model, mae_sarima, rmse_sarima
 
 
 def gradient_boosting_model(X_train, y_train, X_test, y_test):
@@ -134,6 +139,8 @@ def gradient_boosting_model(X_train, y_train, X_test, y_test):
     rmse_gb = np.sqrt(mean_squared_error(y_test, predictions))
 
     print(f"Gradient Boosting MAE: {mae_gb:.2f}, RMSE: {rmse_gb:.2f}")
+
+    return best_model, mae_gb, rmse_gb
 
 
 def xgboost_model(X_train, y_train, X_test, y_test):
@@ -207,6 +214,33 @@ def xgboost_model(X_train, y_train, X_test, y_test):
     plt.savefig('plots/hourly_error.png')
     plt.close()
 
+    return model, mae_xgb, rmse_xgb
+
+
+def mlflow_logging_model(model, model_name, mae, rmse):
+    mlflow.set_experiment("Electricity Demand Forecasting")
+    
+    with mlflow.start_run(run_name=model_name):
+        if model is not None:
+            mlflow.sklearn.log_model(model, "model")
+
+        if model is not None and hasattr(model, 'get_params'):
+            mlflow.log_params(model.get_params())
+        elif model_name == 'SARIMA Model':
+            mlflow.log_param("order_p", 1)
+            mlflow.log_param("order_d", 0)
+            mlflow.log_param("order_q", 1)
+
+            mlflow.log_param("seasonal_P", 1)
+            mlflow.log_param("seasonal_D", 1)
+            mlflow.log_param("seasonal_Q", 1)
+            mlflow.log_param("seasonal_s", 24)
+        else:
+            mlflow.log_params({})
+
+        mlflow.log_metrics({"MAE": mae, "RMSE": rmse})
+        
+
 
 def main():
     argument_parser = argparse.ArgumentParser(description="Train models for electricity demand forecasting")
@@ -223,16 +257,22 @@ def main():
 
     X_train, y_train, X_test, y_test = split_data(data)
 
-    baseline_eval(X_test, y_test)
+    mae_24, rmse_24, mae_168, rmse_168 = baseline_eval(X_test, y_test)
+    mlflow_logging_model(None, 'Baseline Model 24', mae_24, rmse_24)
+    mlflow_logging_model(None, 'Baseline Model 168', mae_168, rmse_168)
 
     if args.gb:
-        gradient_boosting_model(X_train, y_train, X_test, y_test)
+        model, mae, rmse = gradient_boosting_model(X_train, y_train, X_test, y_test)
+        mlflow_logging_model(model, 'Gradient Boosting Model', mae, rmse)
     if args.sarima:
         X_train.drop(columns=['lag_1', 'lag_24', 'lag_168'], inplace=True)
         X_test.drop(columns=['lag_1', 'lag_24', 'lag_168'], inplace=True)
-        sarima_model(y_train, X_test, y_test)
+        model, mae, rmse = sarima_model(y_train, X_test, y_test)
+        mlflow_logging_model(model, 'SARIMA Model', mae, rmse)
     if args.xgb:
-        xgboost_model(X_train, y_train, X_test, y_test)
+        model, mae, rmse = xgboost_model(X_train, y_train, X_test, y_test)
+        mlflow_logging_model(model, 'XGBoost Model', mae, rmse)
+
 
 
 if __name__ == "__main__":
