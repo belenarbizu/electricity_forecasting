@@ -11,6 +11,8 @@ from extermal_features import get_temperature_data
 from datetime import datetime
 import matplotlib.pyplot as plt
 import mlflow
+import joblib
+import os
 
 
 def prepare_data(data):
@@ -241,6 +243,17 @@ def mlflow_logging_model(model, model_name, mae, rmse):
         mlflow.log_metrics({"MAE": mae, "RMSE": rmse})
         
 
+def save_model(model, filename):
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        models_dir = os.path.join(base_dir, '..', 'models')
+        os.makedirs(models_dir, exist_ok=True)
+        full_path = os.path.join(models_dir, filename)
+        joblib.dump(model, full_path)
+        print(f"Model saved as {full_path}")
+    except Exception as e:
+        print(f"Error saving model: {e}")
+
 
 def main():
     argument_parser = argparse.ArgumentParser(description="Train models for electricity demand forecasting")
@@ -272,6 +285,7 @@ def main():
     if args.xgb:
         model, mae, rmse = xgboost_model(X_train, y_train, X_test, y_test)
         mlflow_logging_model(model, 'XGBoost Model', mae, rmse)
+        save_model(model, 'xgboost_model.pkl')
 
 
 

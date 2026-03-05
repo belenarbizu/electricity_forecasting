@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electricity Forecasting</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Electricity Forecasting System</h2>
+
+        <form action="/predict-form" method="post">
+
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="date" name="date" required>
+            </div>
+
+            <button type="submit">Predict</button>
+        </form>
+        {% if result %}
+        <div class="result success">
+            Prediction: {{ result }}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
