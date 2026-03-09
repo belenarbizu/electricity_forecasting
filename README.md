@@ -31,3 +31,5 @@ Heating Degree Days (HDD): it measures how cold is compared to 18ºC: HDD=max(0,
 Cooling Degree Days (CDD): it measures how hot is compared to 18ºC: CDD=max(0,temp−18)
 The relathionship between temperature and demand is not lineal. The demand is high when it's cold and it's hot but is low when the temperature is comfortable. 
 HDD and CDD transform that relationship into something that models understand better.
+
+https://electricity-forecast-328829738430.europe-west1.run.app/
