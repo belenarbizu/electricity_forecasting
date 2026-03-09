@@ -1,27 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Electricity Forecasting</title>
+    <title>Electricity Demand Forecast</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 50px;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+        button {
+            padding: 10px 20px;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        .error {
+            color: red;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h2>Electricity Forecasting System</h2>
+        <h2>Electricity Demand Forecast</h2>
+        <p>You can predict up to 24 hours after 31/12/2016 23:00</p>
+        <br>
 
-        <form action="/predict-form" method="post">
-
+        <form action="/predict-form" method="POST">
             <div class="form-group">
-                <label>Date:</label>
-                <input type="date" name="date" required>
+                <input type="datetime-local" name="date" required>
+                <input type="number" step="0.1" name="temperature" placeholder="Temperature (°C)" required>
             </div>
-
+            <br>
             <button type="submit">Predict</button>
         </form>
-        {% if result %}
-        <div class="result success">
-            Prediction: {{ result }}
-        </div>
+    
+        {% if prediction %}
+            <div class="result">
+                Predicted Demand: <strong>{{ prediction }} MW</strong>
+            </div>
+        {% endif %}
+    
+        {% if error %}
+            <div class="error">
+                {{ error }}
+            </div>
         {% endif %}
     </div>
+
 </body>
 </html>

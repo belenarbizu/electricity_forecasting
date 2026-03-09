@@ -243,13 +243,22 @@ def mlflow_logging_model(model, model_name, mae, rmse):
         mlflow.log_metrics({"MAE": mae, "RMSE": rmse})
         
 
-def save_model(model, filename):
+def save_info(model, filename, y_train):
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         models_dir = os.path.join(base_dir, '..', 'models')
         os.makedirs(models_dir, exist_ok=True)
         full_path = os.path.join(models_dir, filename)
         joblib.dump(model, full_path)
+
+        info = {
+            'history': y_train.iloc[-168:].tolist(),
+            'trend': len(y_train),
+            'last_date': y_train.index[-1].strftime('%Y-%m-%d %H:%M:%S')
+        }
+        info_path = os.path.join(models_dir, 'info.pkl')
+        joblib.dump(info, info_path)
+
         print(f"Model saved as {full_path}")
     except Exception as e:
         print(f"Error saving model: {e}")
@@ -285,7 +294,7 @@ def main():
     if args.xgb:
         model, mae, rmse = xgboost_model(X_train, y_train, X_test, y_test)
         mlflow_logging_model(model, 'XGBoost Model', mae, rmse)
-        save_model(model, 'xgboost_model.pkl')
+        save_info(model, 'xgboost_model.pkl', y_train)
 
 
 

@@ -6,3 +6,4 @@ xgboost
 meteostat
 mlflow
 fastapi
+python-multipart

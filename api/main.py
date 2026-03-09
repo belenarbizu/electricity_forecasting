@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from src.predict import calculate_lags
 
 templates = Jinja2Templates(directory="web/templates")
 
@@ -13,9 +14,9 @@ def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/predict-form")
-def predict_form(request: Request, date: str):
-    # Here you would add your prediction logic using the input data
-    # For demonstration, we'll just return a dummy prediction
-    result = f"Predicted electricity consumption for {date}: 1234 kWh"
-    
-    return templates.TemplateResponse("index.html", {"request": request, "result": result})
+def predict_form(request: Request, date: str = Form(...), temperature: float = Form(...)):
+    try:
+        prediction = calculate_lags(date, temperature)
+        return templates.TemplateResponse("index.html", {"request": request, "prediction": prediction})
+    except Exception as e:
+        return templates.TemplateResponse("index.html", {"request": request, "error": str(e)})
