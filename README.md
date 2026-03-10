@@ -1,13 +1,14 @@
-# Electricity Price Forecasting (Next 24 Hours)
+# Electricity Consumption Forecasting (Next 24 Hours)
 
-## Live Demo
+### Live Demo
 https://electricity-forecast-328829738430.europe-west1.run.app/
 
-## Project Overview
 
-This project predicts the **electricity price for the next 24 hours** based on historical electricity market data in the PJM East region. The system processes historical data, trains a machine learning model, and exposes predictions through a web interface.
+## 📌 Project Overview
 
-Users can input a **date and time**, and the system will return the predicted electricity price for that moment.
+This project predicts the **electricity consumption for the next 24 hours** based on historical electricity market data in the PJM East region. The system processes historical data, trains a machine learning model, and exposes predictions through a web interface.
+
+Users can input a **date and time**, and the system will return the predicted electricity consumption for that moment.
 
 The application is deployed as a containerized service and can be accessed through a web interface powered by a backend API.
 
@@ -15,53 +16,27 @@ The prediction horizon is **strictly limited to 24 hours after the last availabl
 
 ---
 
-# Dataset and Data Processing
+# 📊 Dataset and Data Processing
 
 ## Dataset
 
-The dataset contains historical electricity market information including timestamps and electricity prices.
+The dataset contains historical electricity market information including timestamps and electricity consumption.
 
 Typical structure:
 
-| Timestamp | Price |
+| Timestamp | Consumption |
 |-----------|------|
 | 2015-01-01 00:00 | ... |
 | 2015-01-01 01:00 | ... |
 
 The data is organized at **hourly resolution**, which makes it suitable for time-series forecasting.
 
-American Electric Power (AEP): estimated energy consumption in Megawatts (MW)
-
-Commonwealth Edison (ComEd): estimated energy consumption in Megawatts (MW)
-
-The Dayton Power and Light Company: estimated energy consumption in Megawatts (MW)
-
-Duke Energy Ohio/Kentucky (DEOK): estimated energy consumption in Megawatts (MW)
-
-Dominion Virginia Power (DOM): estimated energy consumption in Megawatts (MW)
-
-Duquesne Light Co. (DUQ): estimated energy consumption in Megawatts (MW)
-
-East Kentucky Power Cooperative (EKPC): estimated energy consumption in Megawatts (MW)
-
-FirstEnergy (FE): estimated energy consumption in Megawatts (MW)
-
-Northern Illinois Hub (NI): estimated energy consumption in Megawatts (MW)
 
 **PJM East Region: 2001-2018 (PJME): estimated energy consumption in Megawatts (MW)**
 
-PJM West Region: 2001-2018 (PJMW): estimated energy consumption in Megawatts (MW)
-
-PJM Load Combined: 1998-2001 (PJM_Load): estimated energy consumption in Megawatts (MW)
-
-est_hourly.paruqet: Combined All Regions Load in Megawatts (MW): American Electric Power (AEP), Commonwealth Edison (ComEd), Dayton Power and Light Company
-
-pjm_hourly_est: Combined All Regions Load: American Electric Power (AEP), Commonwealth Edison (ComEd), Dayton Power and Light Company
-
-
 ---
 
-## Data Preprocessing
+## 🧮 Data Preprocessing
 
 Before training the model, the data undergoes several preprocessing steps:
 
@@ -73,10 +48,19 @@ The timestamp column is converted to a proper datetime format to allow time-base
 
 From the timestamp we extract several useful predictors:
 
-- Hour of the day
-- Day of the week
-- Month
-- Day of the year
+- hour (encoded with sine and cosine transformation)
+- day of week
+- month
+- day of year
+- day of month
+- quarter
+- weekend indicator
+
+Cyclical encoding was used to properly represent the **circular nature of hours**:
+```
+hour_sin = sin(2π * hour / 24)
+hour_cos = cos(2π * hour / 24)
+```
 
 These features allow the model to capture **seasonal and daily electricity consumption patterns**.
 
@@ -157,36 +141,68 @@ HDD and CDD transform this **U-shaped relationship** into features that are easi
 
 ---
 
-# Machine Learning Model
+# 🤖 Machine Learning Model
 
-The forecasting model is implemented using **scikit-learn**.
+# Baseline Models
 
-### Model Type
+Before training machine learning models, two **seasonal naive baselines** were evaluated:
 
-Regression model trained to predict:
+- **Naive-24:** assumes the demand will be the same as the previous day at the same hour  
+- **Naive-168:** assumes the demand will be the same as the previous week at the same hour  
 
-**Electricity price at a given timestamp**
+These baselines provide a simple benchmark to verify that the machine learning models actually improve forecasting performance.
 
-Possible inputs include:
+Evaluation metrics used:
 
-- Hour
-- Day of week
-- Month
-- Other time-derived features
-
-The model learns patterns such as:
-
-- daily price cycles
-- weekday vs weekend behavior
-- seasonal patterns
-
-The trained model is stored using: model.pkl
-
-This allows the model to be loaded instantly by the API without retraining.
+- **MAE (Mean Absolute Error)**
+- **RMSE (Root Mean Squared Error)**
 
 ---
 
-# Prediction Constraints
+# Models Evaluated
+
+Three different models were trained and compared:
+
+### 1. SARIMA
+
+A classical statistical time series model:
+
+SARIMA(1,0,1) × (1,1,1,24)
+
+This configuration captures:
+
+- autoregressive components
+- moving average components
+- **daily seasonality (24-hour cycle)**
+
+Although SARIMA is widely used for time-series forecasting, it struggles when many external features are introduced.
+
+---
+
+### 2. Gradient Boosting Regressor
+
+A tree-based ensemble model using **Gradient Boosting**.
+
+Hyperparameters were optimized using:
+
+- **GridSearchCV**
+- **TimeSeriesSplit cross-validation**
+
+Tree-based models are effective at capturing **non-linear relationships** between features.
+
+---
+
+### 3. XGBoost (Selected Model)
+
+The best-performing model was **XGBoost**, a highly optimized gradient boosting implementation.
+
+XGBoost performed best due to its ability to model:
+
+- complex non-linear patterns
+- interactions between temporal and weather features
+- high-dimensional feature spaces
+
+## Prediction Constraints
 
 The system enforces a strict prediction window:
 
@@ -198,7 +214,19 @@ If a user submits a request outside this window, the API returns an error messag
 
 ---
 
-# API
+# Experiment Tracking
+
+All experiments were tracked using **MLflow**, including:
+
+- model parameters
+- evaluation metrics
+- trained models
+
+This enables reproducibility and easy comparison between different forecasting approaches.
+
+---
+
+# 🚀 API
 
 The backend API is implemented using **FastAPI**.
 
@@ -214,24 +242,27 @@ The API is responsible for:
 ### POST `/predict`
 
 Input:
+```
 date: YYYY-MM-DD
 hour: HH
-
+```
 
 Example request:
+```
 date=2027-12-31
 hour=15
-
+```
 
 Response:
+```
 Predicted electricity price: XX €/MWh
-
+```
 
 The API also validates the input range to ensure the requested timestamp is within the allowed prediction window.
 
 ---
 
-# Web Interface
+# 🖥 Web Interface
 
 The frontend is a simple web interface built with **HTML and CSS**.
 
@@ -247,7 +278,7 @@ The goal of the interface is to provide a **simple demonstration of the model in
 
 ---
 
-# Docker
+# 🐳 Docker
 
 The application is containerized using **Docker**.
 
@@ -261,18 +292,18 @@ The Docker container includes:
 - frontend files
 
 Typical build command:
-
+```
 docker build -t electricity-forecast .
-
+```
 
 Run locally:
-
+```
 docker run -p 8080:8080 electricity-forecast
-
+```
 
 ---
 
-# Deployment
+# ☁ Deployment
 
 The application is deployed using **Google Cloud Run**.
 
@@ -289,30 +320,17 @@ Once deployed, the application is accessible through a public URL.
 
 ---
 
-# Tech Stack
-
-### Programming Language
+# 🛠️ Tech Stack
 
 - Python
-
-### Machine Learning
-
 - scikit-learn
 - pandas
 - numpy
-
-### Backend
-
+- MLflow
 - FastAPI
 - Uvicorn
-
-### Frontend
-
 - HTML
 - CSS
-
-### Infrastructure
-
 - Docker
 - Google Cloud Run
 - Google Cloud Build
@@ -331,7 +349,7 @@ Several extensions could improve the project:
 
 ---
 
-# Purpose of the Project
+# ✅ Purpose of the Project
 
 This project demonstrates how to move a machine learning model **from training to production**, including:
 
