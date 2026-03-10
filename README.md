@@ -64,11 +64,7 @@ hour_cos = cos(2π * hour / 24)
 
 These features allow the model to capture **seasonal and daily electricity consumption patterns**.
 
-### 3. Normalization
-
-Numerical features are scaled using a **StandardScaler** to improve model convergence and performance.
-
-### 4. Train/Test split
+### 3. Train/Test split
 
 The dataset is split chronologically to preserve time order:
 
@@ -112,17 +108,13 @@ Electricity demand is strongly influenced by temperature due to heating and cool
 
 ### Heating Degree Days (HDD)
 
-Heating Degree Days measure how cold the weather is relative to a baseline temperature.
-
-Higher HDD values indicate stronger heating demand.
+Heating Degree Days measure how cold the weather is relative to a baseline temperature
 
 ---
 
 ### Cooling Degree Days (CDD)
 
 Cooling Degree Days measure how hot the weather is relative to a baseline temperature.
-
-Higher CDD values indicate stronger cooling demand.
 
 ---
 
@@ -255,7 +247,7 @@ hour=15
 
 Response:
 ```
-Predicted electricity price: XX €/MWh
+Predicted electricity consumption: XX MWh
 ```
 
 The API also validates the input range to ensure the requested timestamp is within the allowed prediction window.
@@ -272,7 +264,7 @@ The interface allows users to:
 2. Select an hour
 3. Request a prediction
 
-The form sends the input to the API using a POST request and displays the predicted price.
+The form sends the input to the API using a POST request and displays the predicted consumption.
 
 The goal of the interface is to provide a **simple demonstration of the model in production**.
 
@@ -342,8 +334,6 @@ Once deployed, the application is accessible through a public URL.
 Several extensions could improve the project:
 
 - add more features (weather, demand, renewable production)
-- implement more advanced time-series models
-- compare multiple models
 - add interactive visualizations
 - implement automated retraining pipelines
 
