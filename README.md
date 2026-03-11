@@ -86,37 +86,31 @@ These features allow the model to capture **seasonal and daily electricity consu
 
 To improve forecasting performance, external variables related to weather were included.
 
-**Temperature**
+- **Temperature**
 
-Temperature data from **Philadelphia Airport** was used as a proxy for regional weather conditions.
+  Temperature data from **Philadelphia Airport** was used as a proxy for regional weather conditions.
+  
+  Electricity demand is strongly influenced by temperature due to heating and cooling needs.
 
-Electricity demand is strongly influenced by temperature due to heating and cooling needs.
+- **Heating Degree Days (HDD)**
 
----
+  Heating Degree Days measure how cold the weather is relative to a baseline temperature
 
-**Heating Degree Days (HDD)**
+- **Cooling Degree Days (CDD)**
 
-Heating Degree Days measure how cold the weather is relative to a baseline temperature
+  Cooling Degree Days measure how hot the weather is relative to a baseline temperature. 
 
----
+- **Why HDD and CDD?**
 
-**Cooling Degree Days (CDD)**
+  The relationship between **temperature and electricity demand is non-linear**.
 
-Cooling Degree Days measure how hot the weather is relative to a baseline temperature.
-
----
-
-**Why HDD and CDD?**
-
-The relationship between **temperature and electricity demand is non-linear**.
-
-Demand tends to be:
-
-- **high when temperatures are very cold**
-- **high when temperatures are very hot**
-- **low when temperatures are comfortable**
-
-HDD and CDD transform this **U-shaped relationship** into features that are easier for machine learning models to interpret.
+  Demand tends to be:
+  
+  - **high when temperatures are very cold**
+  - **high when temperatures are very hot**
+  - **low when temperatures are comfortable**
+  
+  HDD and CDD transform this **U-shaped relationship** into features that are easier for machine learning models to interpret.
 
 ### 3. Train/Test split
 
