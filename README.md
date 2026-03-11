@@ -4,7 +4,7 @@
 https://electricity-forecast-328829738430.europe-west1.run.app/
 
 
-## 📌 Project Overview
+# 📌 Project Overview
 
 This project predicts the **electricity consumption for the next 24 hours** based on historical electricity market data in the PJM East region. The system processes historical data, trains a machine learning model, and exposes predictions through a web interface.
 
@@ -36,7 +36,25 @@ The data is organized at **hourly resolution**, which makes it suitable for time
 
 ---
 
-## 🧮 Data Preprocessing
+# 📈 Exploratory Data Analysis
+
+During the exploratory analysis, some **extreme low demand values** appeared in the dataset.
+
+After investigating these anomalies, they were identified as **real demand drops during Hurricane Sandy in 2012**.
+
+Since these values correspond to real-world events and represent legitimate system behavior, they were **kept in the dataset** instead of being removed as outliers. Removing them would artificially smooth the series and reduce the model’s ability to handle extreme scenarios.
+
+The electricity demand series presents several important temporal patterns:
+
+- **Very strong local dependency** (hour-to-hour autocorrelation)
+- **Strong daily seasonality**
+- **Moderate weekly seasonality**
+
+These patterns are typical in electricity demand forecasting because consumption follows **human activity cycles** (daily routines and weekday/weekend differences).
+
+---
+
+# 🧮 Data Preprocessing
 
 Before training the model, the data undergoes several preprocessing steps:
 
@@ -64,41 +82,11 @@ hour_cos = cos(2π * hour / 24)
 
 These features allow the model to capture **seasonal and daily electricity consumption patterns**.
 
-### 3. Train/Test split
-
-The dataset is split chronologically to preserve time order:
-
-- Training data: historical observations
-- Test data: most recent observations
-
-This prevents **data leakage**, which is critical in time-series forecasting.
-
-
-## Exploratory Data Analysis
-
-During the exploratory analysis, some **extreme low demand values** appeared in the dataset.
-
-After investigating these anomalies, they were identified as **real demand drops during Hurricane Sandy in 2012**.
-
-Since these values correspond to real-world events and represent legitimate system behavior, they were **kept in the dataset** instead of being removed as outliers. Removing them would artificially smooth the series and reduce the model’s ability to handle extreme scenarios.
-
-
-## Time Series Characteristics
-
-The electricity demand series presents several important temporal patterns:
-
-- **Very strong local dependency** (hour-to-hour autocorrelation)
-- **Strong daily seasonality**
-- **Moderate weekly seasonality**
-
-These patterns are typical in electricity demand forecasting because consumption follows **human activity cycles** (daily routines and weekday/weekend differences).
-
-
-## External Features
+### 3. External Features
 
 To improve forecasting performance, external variables related to weather were included.
 
-### Temperature
+**Temperature**
 
 Temperature data from **Philadelphia Airport** was used as a proxy for regional weather conditions.
 
@@ -106,19 +94,19 @@ Electricity demand is strongly influenced by temperature due to heating and cool
 
 ---
 
-### Heating Degree Days (HDD)
+**Heating Degree Days (HDD)**
 
 Heating Degree Days measure how cold the weather is relative to a baseline temperature
 
 ---
 
-### Cooling Degree Days (CDD)
+**Cooling Degree Days (CDD)**
 
 Cooling Degree Days measure how hot the weather is relative to a baseline temperature.
 
 ---
 
-### Why HDD and CDD?
+**Why HDD and CDD?**
 
 The relationship between **temperature and electricity demand is non-linear**.
 
@@ -130,12 +118,20 @@ Demand tends to be:
 
 HDD and CDD transform this **U-shaped relationship** into features that are easier for machine learning models to interpret.
 
+### 3. Train/Test split
+
+The dataset is split chronologically to preserve time order:
+
+- Training data: historical observations
+- Test data: most recent observations
+
+This prevents **data leakage**, which is critical in time-series forecasting.
 
 ---
 
 # 🤖 Machine Learning Model
 
-# Baseline Models
+## Baseline Models
 
 Before training machine learning models, two **seasonal naive baselines** were evaluated:
 
@@ -151,7 +147,7 @@ Evaluation metrics used:
 
 ---
 
-# Models Evaluated
+## Models Evaluated
 
 Three different models were trained and compared:
 
@@ -206,7 +202,7 @@ If a user submits a request outside this window, the API returns an error messag
 
 ---
 
-# Experiment Tracking
+# 🔍 Experiment Tracking
 
 All experiments were tracked using **MLflow**, including:
 
@@ -329,7 +325,7 @@ Once deployed, the application is accessible through a public URL.
 
 ---
 
-# Possible Future Improvements
+# 🔼 Possible Future Improvements
 
 Several extensions could improve the project:
 
