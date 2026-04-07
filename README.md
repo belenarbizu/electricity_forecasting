@@ -2,7 +2,7 @@
 
 ### Live Demo
 https://electricity-forecast-328829738430.europe-west1.run.app/
-
+> The demo is temporarily unavailable
 
 # 📌 Project Overview
 
